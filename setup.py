@@ -6,5 +6,5 @@ Installs required Python dependencies.
 import subprocess
 import sys
 
-subprocess.check_call([sys.executable, "-m", "pip", "install", "openpyxl", "-q"])
+subprocess.check_call([sys.executable, "-m", "pip", "install", "openpyxl", "python-docx", "cairosvg", "-q"])
 print("Dependencies installed.")
