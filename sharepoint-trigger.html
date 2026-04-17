@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand Analysis Trigger</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Lexend', sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 40px 20px; }
+    .card { background: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(25,25,25,0.08); width: 100%; max-width: 480px; overflow: hidden; }
+    .card-header { background: #191919; padding: 28px 32px; display: flex; align-items: center; gap: 14px; }
+    .card-header .icon { width: 40px; height: 40px; background: #34C52A; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .card-header .icon svg { width: 22px; height: 22px; fill: #191919; }
+    .card-header h1 { color: #FEFFEA; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+    .card-header p { color: #429792; font-size: 13px; font-weight: 400; margin-top: 2px; }
+    .card-body { padding: 32px; }
+    .field { margin-bottom: 20px; }
+    .field label { display: block; font-size: 13px; font-weight: 500; color: #191919; margin-bottom: 6px; }
+    .field input { width: 100%; padding: 12px 16px; border: 2px solid #e8e8e8; border-radius: 10px; font-family: 'Lexend', sans-serif; font-size: 15px; color: #191919; transition: border-color 0.2s; outline: none; }
+    .field input:focus { border-color: #429792; }
+    .field input::placeholder { color: #b0b0b0; }
+    .btn { width: 100%; padding: 14px 24px; background: #34C52A; color: #191919; border: none; border-radius: 10px; font-family: 'Lexend', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
+    .btn:hover { background: #2db125; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(52,197,42,0.3); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { background: #429792; cursor: not-allowed; transform: none; box-shadow: none; }
+    .status { margin-top: 20px; padding: 14px 16px; border-radius: 10px; font-size: 13px; line-height: 1.5; display: none; }
+    .status.info { display: block; background: #f0faf9; border: 1px solid #429792; color: #2a6b67; }
+    .status.success { display: block; background: #f0fdf0; border: 1px solid #34C52A; color: #1a6615; }
+    .status.error { display: block; background: #fdf0f0; border: 1px solid #e04040; color: #8b1a1a; }
+    .status a { color: inherit; font-weight: 600; }
+    .analyses-list { margin-top: 24px; padding-top: 20px; border-top: 1px solid #f0f0f0; }
+    .analyses-list h3 { font-size: 12px; font-weight: 600; color: #429792; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .analyses-list ul { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .analyses-list li { font-size: 12px; color: #666; padding: 4px 0; display: flex; align-items: center; gap: 6px; }
+    .analyses-list li::before { content: ''; width: 6px; height: 6px; background: #34C52A; border-radius: 50%; flex-shrink: 0; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #191919; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <div><h1>Brand Analysis</h1><p>8 frameworks &middot; runs on Anthropic cloud</p></div>
+  </div>
+  <div class="card-body">
+    <form id="analysisForm" onsubmit="return triggerAnalysis(event)">
+      <div class="field"><label for="brandName">Brand Name</label><input type="text" id="brandName" placeholder="e.g. Tesla" required></div>
+      <div class="field"><label for="website">Website</label><input type="url" id="website" placeholder="e.g. https://tesla.com" required></div>
+      <button type="submit" class="btn" id="submitBtn">Run Analysis</button>
+    </form>
+    <div id="status" class="status"></div>
+    <div class="analyses-list">
+      <h3>Analyses included</h3>
+      <ul><li>9 Cs Analysis</li><li>PESTLE</li><li>SWOT + TOWS</li><li>Commercial Model</li><li>Data & Tech Audit</li><li>IR & External</li><li>Marketing 7Ps</li><li>Brand Deep Research</li></ul>
+    </div>
+  </div>
+</div>
+<script>
+  const ROUTINE_ENDPOINT = 'https://api.anthropic.com/v1/claude_code/routines/trig_01KqtdXkfMaCuXisFBNMPwsC/fire';
+  const ROUTINE_TOKEN = 'YOUR_ROUTINE_BEARER_TOKEN_HERE';
+  async function triggerAnalysis(e) {
+    e.preventDefault();
+    const brandName = document.getElementById('brandName').value.trim();
+    const website = document.getElementById('website').value.trim();
+    const btn = document.getElementById('submitBtn');
+    const status = document.getElementById('status');
+    if (!brandName || !website) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Triggering...';
+    status.className = 'status info';
+    status.innerHTML = '<span class="spinner"></span>Sending request to Claude Routine...';
+    try {
+      const response = await fetch(ROUTINE_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ROUTINE_TOKEN, 'anthropic-beta': 'experimental-cc-routine-2026-04-01' }, body: JSON.stringify({ message: JSON.stringify({ brand_name: brandName, website: website }) }) });
+      if (response.ok) { const data = await response.json(); const sessionUrl = data.session_url || data.url || ''; status.className = 'status success'; status.innerHTML = sessionUrl ? 'Analysis started for <strong>' + brandName + '</strong>. <a href="' + sessionUrl + '" target="_blank">View session</a>' : 'Analysis started for <strong>' + brandName + '</strong>. Check your routine dashboard for progress.'; }
+      else { const errText = await response.text(); throw new Error(response.status + ': ' + errText.substring(0, 200)); }
+    } catch (err) {
+      status.className = 'status error';
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) { status.innerHTML = '<strong>CORS blocked.</strong> The Claude API does not allow direct browser requests. Use the curl command instead:<br><br><code style="font-size:11px;word-break:break-all;">curl -X POST "' + ROUTINE_ENDPOINT + '" -H "Authorization: Bearer ' + ROUTINE_TOKEN + '" -H "anthropic-beta: experimental-cc-routine-2026-04-01" -H "Content-Type: application/json" -d \x27{"message": "' + brandName + ' (' + website + ')"}\x27</code>'; }
+      else { status.innerHTML = '<strong>Error:</strong> ' + err.message; }
+    } finally { btn.disabled = false; btn.textContent = 'Run Analysis'; }
+  }
+</script>
+</body>
+</html>
