@@ -36,51 +36,94 @@
     .analyses-list li::before { content: ''; width: 6px; height: 6px; background: #34C52A; border-radius: 50%; flex-shrink: 0; }
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #191919; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .setup-banner { margin-top: 16px; padding: 12px 16px; border-radius: 10px; background: #fffbe6; border: 1px solid #e0d080; font-size: 12px; color: #8a7500; display: none; }
+    .setup-banner.show { display: block; }
   </style>
 </head>
 <body>
-<div class="card">
-  <div class="card-header">
-    <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-    <div><h1>Brand Analysis</h1><p>8 frameworks &middot; runs on Anthropic cloud</p></div>
-  </div>
-  <div class="card-body">
-    <form id="analysisForm" onsubmit="return triggerAnalysis(event)">
-      <div class="field"><label for="brandName">Brand Name</label><input type="text" id="brandName" placeholder="e.g. Tesla" required></div>
-      <div class="field"><label for="website">Website</label><input type="url" id="website" placeholder="e.g. https://tesla.com" required></div>
-      <button type="submit" class="btn" id="submitBtn">Run Analysis</button>
-    </form>
-    <div id="status" class="status"></div>
-    <div class="analyses-list">
-      <h3>Analyses included</h3>
-      <ul><li>9 Cs Analysis</li><li>PESTLE</li><li>SWOT + TOWS</li><li>Commercial Model</li><li>Data & Tech Audit</li><li>IR & External</li><li>Marketing 7Ps</li><li>Brand Deep Research</li></ul>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+      <div><h1>Brand Analysis</h1><p>8 frameworks &middot; runs on Anthropic cloud</p></div>
+    </div>
+    <div class="card-body">
+      <div id="setupBanner" class="setup-banner">
+        <strong>Setup required:</strong> Update the AZURE_FUNCTION_URL below with your Azure Function endpoint.
+      </div>
+      <form id="analysisForm" onsubmit="return triggerAnalysis(event)">
+        <div class="field"><label for="brandName">Brand Name</label><input type="text" id="brandName" placeholder="e.g. Tesla" required></div>
+        <div class="field"><label for="website">Website</label><input type="url" id="website" placeholder="e.g. https://tesla.com" required></div>
+        <button type="submit" class="btn" id="submitBtn">Run Analysis</button>
+      </form>
+      <div id="status" class="status"></div>
+      <div class="analyses-list">
+        <h3>Analyses included</h3>
+        <ul><li>9 Cs Analysis</li><li>PESTLE</li><li>SWOT + TOWS</li><li>Commercial Model</li><li>Data &amp; Tech Audit</li><li>IR &amp; External</li><li>Marketing 7Ps</li><li>Brand Deep Research</li></ul>
+      </div>
     </div>
   </div>
-</div>
-<script>
-  const ROUTINE_ENDPOINT = 'https://api.anthropic.com/v1/claude_code/routines/trig_01KqtdXkfMaCuXisFBNMPwsC/fire';
-  const ROUTINE_TOKEN = 'YOUR_ROUTINE_BEARER_TOKEN_HERE';
-  async function triggerAnalysis(e) {
-    e.preventDefault();
-    const brandName = document.getElementById('brandName').value.trim();
-    const website = document.getElementById('website').value.trim();
-    const btn = document.getElementById('submitBtn');
-    const status = document.getElementById('status');
-    if (!brandName || !website) return;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Triggering...';
-    status.className = 'status info';
-    status.innerHTML = '<span class="spinner"></span>Sending request to Claude Routine...';
-    try {
-      const response = await fetch(ROUTINE_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ROUTINE_TOKEN, 'anthropic-beta': 'experimental-cc-routine-2026-04-01' }, body: JSON.stringify({ message: JSON.stringify({ brand_name: brandName, website: website }) }) });
-      if (response.ok) { const data = await response.json(); const sessionUrl = data.session_url || data.url || ''; status.className = 'status success'; status.innerHTML = sessionUrl ? 'Analysis started for <strong>' + brandName + '</strong>. <a href="' + sessionUrl + '" target="_blank">View session</a>' : 'Analysis started for <strong>' + brandName + '</strong>. Check your routine dashboard for progress.'; }
-      else { const errText = await response.text(); throw new Error(response.status + ': ' + errText.substring(0, 200)); }
-    } catch (err) {
-      status.className = 'status error';
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) { status.innerHTML = '<strong>CORS blocked.</strong> The Claude API does not allow direct browser requests. Use the curl command instead:<br><br><code style="font-size:11px;word-break:break-all;">curl -X POST "' + ROUTINE_ENDPOINT + '" -H "Authorization: Bearer ' + ROUTINE_TOKEN + '" -H "anthropic-beta: experimental-cc-routine-2026-04-01" -H "Content-Type: application/json" -d \x27{"message": "' + brandName + ' (' + website + ')"}\x27</code>'; }
-      else { status.innerHTML = '<strong>Error:</strong> ' + err.message; }
-    } finally { btn.disabled = false; btn.textContent = 'Run Analysis'; }
-  }
-</script>
+  <script>
+    // ─── CONFIGURATION ───────────────────────────────────────────────
+    // Replace with your Azure Function URL (from Step 8 of the admin guide).
+    // Format: https://func-upscale-brand-proxy.azurewebsites.net/api/BrandAnalysisProxy?code=YOUR_FUNCTION_KEY
+    const AZURE_FUNCTION_URL = 'YOUR_AZURE_FUNCTION_URL_HERE';
+    // ─────────────────────────────────────────────────────────────────
+
+    // Show setup banner if not configured
+    if (AZURE_FUNCTION_URL.includes('YOUR_AZURE_FUNCTION_URL')) {
+      document.getElementById('setupBanner').classList.add('show');
+    }
+
+    async function triggerAnalysis(e) {
+      e.preventDefault();
+      const brandName = document.getElementById('brandName').value.trim();
+      const website = document.getElementById('website').value.trim();
+      const btn = document.getElementById('submitBtn');
+      const status = document.getElementById('status');
+
+      if (!brandName || !website) return;
+
+      if (AZURE_FUNCTION_URL.includes('YOUR_AZURE_FUNCTION_URL')) {
+        status.className = 'status error';
+        status.innerHTML = '<strong>Not configured.</strong> The Azure Function URL needs to be set. See the admin setup guide.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Triggering...';
+      status.className = 'status info';
+      status.innerHTML = '<span class="spinner"></span>Sending request to Azure Function proxy...';
+
+      try {
+        const response = await fetch(AZURE_FUNCTION_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand_name: brandName, website: website })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const sessionUrl = data.session_url || data.url || '';
+          status.className = 'status success';
+          status.innerHTML = sessionUrl
+            ? 'Analysis started for <strong>' + brandName + '</strong>. <a href="' + sessionUrl + '" target="_blank">View session</a>'
+            : 'Analysis started for <strong>' + brandName + '</strong>. Check your routine dashboard for progress.';
+        } else {
+          const errText = await response.text();
+          throw new Error(response.status + ': ' + errText.substring(0, 200));
+        }
+      } catch (err) {
+        status.className = 'status error';
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          status.innerHTML = '<strong>Connection failed.</strong> Could not reach the Azure Function. Check that the function is deployed and the URL is correct.';
+        } else {
+          status.innerHTML = '<strong>Error:</strong> ' + err.message;
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Run Analysis';
+      }
+    }
+  </script>
 </body>
 </html>
